@@ -1,0 +1,42 @@
+services:
+  dotnet-postgres:
+    image: postgres:14
+    container_name: dotnet-keycloak-postgres
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_DB: dotnet-keycloak
+      POSTGRES_USER: dotnet-keycloak
+      POSTGRES_PASSWORD: dotnet-keycloak
+    volumes:
+      - C:/docker/volumes/dotnet-keycloak/postgres_data:/var/lib/postgresql/data
+    networks:
+      - dotnet-keycloak-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dotnet-keycloak"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  dotnet-keycloak:
+    image: quay.io/keycloak/keycloak:23.0.6
+    container_name: dotnet-keycloak
+    ports:
+      - '8069:8080'
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://dotnet-postgres:5432/dotnet-keycloak
+      KC_DB_USERNAME: dotnet-keycloak
+      KC_DB_PASSWORD: dotnet-keycloak
+      KC_HEALTH_ENABLED: true
+    depends_on:
+      dotnet-postgres:
+        condition: service_healthy
+    networks:
+      - dotnet-keycloak-network
+    command: start-dev
+
+networks:
+  dotnet-keycloak-network:
